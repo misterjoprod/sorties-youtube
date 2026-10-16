@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f5f6f8" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111318" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sorties YT">
+<meta name="robots" content="noindex">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icone-180.png">
+<link rel="icon" type="image/png" href="icone-192.png">
+<style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Calendrier des sorties YouTube</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,600..800&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Appli de poche : une colonne, en-tête collant, filtres qui défilent, barre d'onglets en bas (Agenda · Mois · Habitudes) */
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --fg: #15171c; --muted: #5c6370; --line: #dde1e7; --weekend: #eceff4; --focus: #15171c; --barre: rgb(255 255 255 / .92);
+    --c-sq: #c2378a; --c-mi: #3a5ccc; --c-am: #0f8f80; --c-in: #d65a0f; --c-mc: #7d45b5; --c-ma: #2b8f5c;
+    --c-jo: #cf3b40; --c-se: #0a7fd6; --c-dj: #9a6a42; --c-mb: #a87800; --c-mj: #15171c;
+    --c-nb: #0891b2; --c-lp: #db2777; --c-bz: #4f46e5; --c-jz: #b7791f; --c-fz: #16a34a; --ok: #17803d; --bad: #c43d2f;
+    --f-display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    --f-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111318; --panel: #181b21; --fg: #eceef2; --muted: #9aa1ad; --line: #2a2e37; --weekend: #1d2129; --focus: #eceef2; --barre: rgb(24 27 33 / .92);
+      --c-sq: #f06db7; --c-mi: #7d9bff; --c-am: #3cc7b4; --c-in: #ff8c4a; --c-mc: #b48af0; --c-ma: #5dcc8f;
+      --c-jo: #ff7378; --c-se: #4fb3ff; --c-dj: #d1a079; --c-mb: #e8b73a; --c-mj: #eceef2;
+      --c-nb: #22d3ee; --c-lp: #f472b6; --c-bz: #8b8ff8; --c-jz: #f2c14e; --c-fz: #4ade80; --ok: #4ade80; --bad: #ff7a6b; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #111318; --panel: #181b21; --fg: #eceef2; --muted: #9aa1ad; --line: #2a2e37; --weekend: #1d2129; --focus: #eceef2; --barre: rgb(24 27 33 / .92);
+    --c-sq: #f06db7; --c-mi: #7d9bff; --c-am: #3cc7b4; --c-in: #ff8c4a; --c-mc: #b48af0; --c-ma: #5dcc8f;
+    --c-jo: #ff7378; --c-se: #4fb3ff; --c-dj: #d1a079; --c-mb: #e8b73a; --c-mj: #eceef2;
+      --c-nb: #22d3ee; --c-lp: #f472b6; --c-bz: #8b8ff8; --c-jz: #f2c14e; --c-fz: #4ade80; --ok: #4ade80; --bad: #ff7a6b; color-scheme: dark;
+  }
+  body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.4; -webkit-tap-highlight-color: transparent; }
+  .appli { max-width: 720px; margin-inline: auto; min-height: 100%; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .gouttiere { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+  /* en-tête */
+  .tete { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 14px 8px; display: grid; gap: 10px; border-bottom: 1px solid var(--line); }
+  .titre-appli { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  h1 { font-family: var(--f-display); font-stretch: 78%; font-weight: 800; font-size: 28px; line-height: 1; margin: 0; letter-spacing: -.01em; }
+  .maj { font-family: var(--f-mono); font-size: 11px; color: var(--muted); text-align: right; }
+  .filtres { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+  .filtres::-webkit-scrollbar { display: none; }
+  .filtre { appearance: none; flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 12px 4px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--fg); font: inherit; font-size: 14px; cursor: pointer; }
+  .filtre .pastille { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex: none; }
+  .filtre[aria-pressed="false"] { opacity: .45; }
+  .filtre[aria-pressed="false"] .pastille { background: transparent; box-shadow: inset 0 0 0 2px var(--c); }
+  .filtre.tout { font-size: 13px; color: var(--muted); }
+
+  /* vues */
+  .vue { display: grid; gap: 22px; padding-block: 16px 24px; }
+  h2 { font-family: var(--f-display); font-stretch: 85%; font-weight: 700; font-size: 20px; margin: 0; }
+  .bloc { display: grid; gap: 10px; }
+  .note { margin: 0; color: var(--muted); font-size: 13px; }
+  .etat { padding: 48px 0; text-align: center; color: var(--muted); display: grid; gap: 12px; justify-items: center; }
+  .bouton { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font: inherit; font-size: 14px; padding: 8px 14px; border-radius: 8px; cursor: pointer; }
+
+  /* semaine en cours */
+  .semaine-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .sj { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 6px 4px 8px; display: grid; gap: 4px; justify-items: center; min-width: 0; }
+  .sj.we { background: var(--weekend); }
+  .sj.auj { border: 2px solid var(--fg); padding: 5px 3px 7px; }
+  .sj .l { font-family: var(--f-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .sj .n { font-family: var(--f-display); font-stretch: 85%; font-weight: 700; font-size: 17px; }
+  .points { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; min-height: 8px; }
+  .pt { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+  .pt.prevu { background: transparent; box-shadow: inset 0 0 0 1.5px var(--c); }
+
+  /* cartes de sortie */
+  .jour-titre { font-family: var(--f-mono); font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin: 6px 0 0; }
+  .jour-titre.auj { color: var(--fg); font-weight: 500; }
+  .carte { display: grid; grid-template-columns: 4px 1fr; gap: 0 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px 10px 0; color: var(--fg); text-decoration: none; overflow: hidden; }
+  .carte .barre { background: var(--c); border-radius: 0 3px 3px 0; grid-row: span 3; }
+  .carte .haut { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+  .carte .qui { font-weight: 600; }
+  .carte .h { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+  .carte .t { font-size: 15px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .carte .meta { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+  .carte.prevue { background: transparent; border-style: dashed; }
+  .carte.prevue .t { color: var(--muted); font-size: 14px; }
+  .liste { display: grid; gap: 8px; }
+
+  /* mois */
+  .nav-mois { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .nav-mois h2 { text-transform: capitalize; }
+  .fleche { appearance: none; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--panel); color: var(--fg); font: inherit; font-size: 18px; cursor: pointer; }
+  .fleche:disabled { opacity: .3; cursor: default; }
+  .grille { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .grille .ej { font-family: var(--f-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); text-align: center; }
+  .case { appearance: none; aspect-ratio: 1 / 1.05; max-width: 100%; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--fg); font: inherit; padding: 4px 2px; display: grid; grid-template-rows: auto 1fr; justify-items: center; gap: 2px; cursor: pointer; min-width: 0; }
+  .case.we { background: var(--weekend); }
+  .case.vide { visibility: hidden; }
+  .case.futur { opacity: .4; }
+  .case.auj .num { background: var(--fg); color: var(--bg); border-radius: 999px; padding: 0 6px; }
+  .case[aria-pressed="true"] { border: 2px solid var(--fg); padding: 3px 1px; }
+  .case .num { font-family: var(--f-mono); font-size: 12px; }
+  .case .points { align-content: start; }
+  .case .plus { font-family: var(--f-mono); font-size: 9px; color: var(--muted); }
+
+  /* habitudes */
+  .hab { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 10px; padding: 12px 14px; display: grid; gap: 8px; }
+  .hab .haut { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .hab .qui { font-weight: 600; font-size: 16px; }
+  .hab .abo { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+  .hab .phrase { font-size: 14px; }
+  .hab .meta { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+  .bande { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .bande div { display: grid; justify-items: center; gap: 3px; }
+  .bande .l { font-family: var(--f-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; }
+  .bande .b { width: 100%; height: 22px; border-radius: 4px; background: var(--weekend); display: grid; place-items: center; font-family: var(--f-mono); font-size: 11px; }
+  .bande .b.on { background: color-mix(in srgb, var(--c) var(--force), var(--panel)); font-weight: 500; }
+
+  /* comparer */
+  .reglages { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 2px; background: var(--panel); }
+  .seg button { appearance: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 999px; cursor: pointer; min-height: 32px; }
+  .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+  .graphe { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 6px 4px; min-height: 230px; touch-action: pan-y; }
+  .graphe svg { display: block; width: 100%; overflow: visible; }
+  .graphe text { font-family: var(--f-mono); font-size: 10px; fill: var(--muted); }
+  .graphe text.fin { fill: var(--fg); font-family: var(--f-body); font-size: 11px; font-weight: 600; }
+  .bulle-g { position: absolute; top: 6px; z-index: 2; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 20px rgb(0 0 0 / .16); padding: 6px 8px; font-size: 12px; display: grid; gap: 2px; min-width: 9.5rem; }
+  .bulle-g .t { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+  .bulle-g .r { display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+  .bulle-g .r span:first-child { display: inline-flex; align-items: center; gap: 5px; }
+  .bulle-g .r span:last-child { font-family: var(--f-mono); }
+  .sw { width: 8px; height: 8px; border-radius: 2px; background: var(--c); flex: none; }
+  .rang { background: var(--panel); border: 1px solid var(--line); border-left: 4px solid var(--c); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; }
+  .rang .haut { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .rang .qui { font-weight: 600; }
+  .chiffres { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; }
+  .chiffres div { display: grid; gap: 1px; min-width: 0; }
+  .chiffres .val { font-family: var(--f-display); font-stretch: 85%; font-weight: 700; font-size: 19px; line-height: 1.1; }
+  .chiffres .lab { font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+  @media (min-width: 520px) { .chiffres { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+  .variation { font-family: var(--f-mono); font-size: 13px; font-weight: 500; padding: 2px 8px; border-radius: 999px; white-space: nowrap; background: var(--weekend); color: var(--muted); }
+  .variation.up { background: color-mix(in srgb, var(--ok) 16%, var(--panel)); color: var(--ok); }
+  .variation.down { background: color-mix(in srgb, var(--bad) 14%, var(--panel)); color: var(--bad); }
+  .lien-detail { appearance: none; border: 0; background: none; color: var(--fg); font: inherit; font-size: 13px; text-decoration: underline; text-underline-offset: 2px; padding: 4px 0; cursor: pointer; justify-self: start; }
+  .detail { display: grid; gap: 10px; padding-top: 6px; border-top: 1px solid var(--line); }
+  .tab-mois { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .tab-mois th, .tab-mois td { padding: 6px 4px; border-bottom: 1px solid var(--line); text-align: right; }
+  .tab-mois th { font-family: var(--f-mono); font-weight: 500; font-size: 10px; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+  .tab-mois th:first-child, .tab-mois td:first-child { text-align: left; }
+
+  /* barre d'onglets */
+  .onglets { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; background: var(--barre); backdrop-filter: blur(10px); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+  .onglets-in { max-width: 720px; margin-inline: auto; display: grid; grid-template-columns: repeat(4, 1fr); }
+  .onglet { appearance: none; border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; font-weight: 500; padding: 8px 4px 10px; display: grid; justify-items: center; gap: 3px; cursor: pointer; min-height: 56px; }
+  .onglet svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .onglet[aria-selected="true"] { color: var(--fg); }
+  :is(.filtre, .onglet, .case, .fleche, .bouton, .carte, .seg button, .lien-detail):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  @media (min-width: 600px) { h1 { font-size: 34px; } .case { aspect-ratio: 1 / .8; } }
+</style>
+
+<div class="appli">
+  <header class="tete gouttiere">
+    <div class="titre-appli">
+      <h1>Sorties YouTube</h1>
+      <div class="maj" id="maj">chargement…</div>
+    </div>
+    <div class="filtres" id="filtres" role="group" aria-label="Créateurs affichés"></div>
+  </header>
+
+  <main class="gouttiere">
+    <section class="vue" id="agenda" role="tabpanel" aria-labelledby="onglet-agenda"></section>
+    <section class="vue" id="mois" role="tabpanel" aria-labelledby="onglet-mois" hidden></section>
+    <section class="vue" id="habitudes" role="tabpanel" aria-labelledby="onglet-habitudes" hidden></section>
+    <section class="vue" id="comparer" role="tabpanel" aria-labelledby="onglet-comparer" hidden></section>
+  </main>
+</div>
+
+<nav class="onglets" aria-label="Vues">
+  <div class="onglets-in" role="tablist">
+    <button class="onglet" id="onglet-agenda" role="tab" aria-controls="agenda" aria-selected="true" data-vue="agenda">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>Agenda
+    </button>
+    <button class="onglet" id="onglet-mois" role="tab" aria-controls="mois" aria-selected="false" data-vue="mois">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Mois
+    </button>
+    <button class="onglet" id="onglet-habitudes" role="tab" aria-controls="habitudes" aria-selected="false" data-vue="habitudes">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Habitudes
+    </button>
+    <button class="onglet" id="onglet-comparer" role="tab" aria-controls="comparer" aria-selected="false" data-vue="comparer">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-5 4 4 8-8M15 8h5v5"/></svg>Comparer
+    </button>
+  </div>
+</nav>
+
+<script>
+const JOURS = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
+const JOURS_L = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+const MOIS_C = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const nf = new Intl.NumberFormat('fr-FR');
+const compact = new Intl.NumberFormat('fr-FR', { notation: 'compact', maximumFractionDigits: 1 });
+const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+const couleur = (k) => `var(--c-${k})`;
+const dUTC = (s) => new Date(s + 'T00:00:00Z');
+const jSem = (s) => (dUTC(s).getUTCDay() + 6) % 7;
+const iso = (d) => d.toISOString().slice(0, 10);
+const plusJours = (s, n) => iso(new Date(dUTC(s).getTime() + n * 864e5));
+const fJour = (s) => { const d = dUTC(s); return JOURS_L[jSem(s)] + ' ' + d.getUTCDate() + ' ' + MOIS_C[d.getUTCMonth()]; };
+const fHeure = (h) => h.replace(':', ' h ');
+const fDuree = (s) => (s == null ? '' : s >= 3600 ? Math.floor(s / 3600) + ' h ' + String(Math.floor((s % 3600) / 60)).padStart(2, '0') : Math.round(s / 60) + ' min');
+const aujourdhui = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const heureMaintenant = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+
+const memo = {
+  lire(k, d) { try { const v = localStorage.getItem('sorties-' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  ecrire(k, v) { try { localStorage.setItem('sorties-' + k, JSON.stringify(v)); } catch (e) { /* stockage indisponible */ } },
+};
+
+let D = null, parC = {}, actifs = new Set(), vue = 'agenda', moisVu = null, jourChoisi = aujourdhui;
+let S = null, parS = {}, periode = memo.lire('periode', 7), modeC = memo.lire('modeC', 'vues'), detailOuvert = null;
+let choisis = new Set(memo.lire('choisis', ['mj', 'nb', 'lp', 'bz', 'jz', 'fz']));
+const VUES = ['agenda', 'mois', 'habitudes', 'comparer'];
+const visibles = () => D.videos.filter((v) => actifs.has(v.k));
+
+/* habitudes d'un créateur : jours dominants et heure fréquente */
+function habitude(k) {
+  const l = D.videos.filter((v) => v.k === k);
+  const parJ = JOURS.map((_, i) => l.filter((v) => jSem(v.d) === i).length);
+  const ordre = parJ.map((n, i) => [n, i]).sort((a, b) => b[0] - a[0]);
+  let jours = [];
+  if (l.length >= 3) {
+    if (ordre[0][0] / l.length >= 0.6) jours = [ordre[0][1]];
+    else if ((ordre[0][0] + ordre[1][0]) / l.length >= 0.75 && ordre[1][0] / l.length >= 0.25) jours = [ordre[0][1], ordre[1][1]].sort();
+  }
+  const base = jours.length ? l.filter((v) => jours.includes(jSem(v.d))) : l;
+  const c = {};
+  base.forEach((v) => { const [h, m] = v.h.split(':').map(Number); const t = String(h).padStart(2, '0') + ':' + String(Math.floor(m / 15) * 15).padStart(2, '0'); c[t] = (c[t] || 0) + 1; });
+  const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
+  let heure = top ? top[0] : null;
+  if (top && top[1] === 1 && base.length > 1) {  // aucune heure ne se répète : heure médiane
+    const mins = base.map((v) => { const [hh, mm] = v.h.split(':').map(Number); return hh * 60 + mm; }).sort((a, b) => a - b);
+    const med = mins[Math.floor((mins.length - 1) / 2)];
+    heure = String(Math.floor(med / 60)).padStart(2, '0') + ':' + String(Math.floor((med % 60) / 15) * 15).padStart(2, '0');
+  }
+  return { l, parJ, jours, heure, derniere: l.length ? l[l.length - 1].d : parC[k].avant };
+}
+
+/* prochaines sorties probables (7 jours), d'après les habitudes */
+function previsions() {
+  const out = [];
+  for (const c of D.createurs) {
+    if (c.k === 'mj' || !actifs.has(c.k)) continue;
+    const h = habitude(c.k);
+    if (!h.jours.length || !h.heure) continue;
+    for (let n = 0; n < 7; n++) {
+      const d = plusJours(aujourdhui, n);
+      if (!h.jours.includes(jSem(d))) continue;
+      if (D.videos.some((v) => v.k === c.k && v.d === d)) continue;
+      if (n === 0 && h.heure < heureMaintenant && d <= D.fin) continue;
+      out.push({ k: c.k, d, h: h.heure, prevu: true });
+    }
+  }
+  return out.sort((a, b) => (a.d + a.h < b.d + b.h ? -1 : 1));
+}
+
+/* filtres */
+function dessinerFiltres() {
+  const box = document.getElementById('filtres');
+  box.replaceChildren();
+  if (vue === 'comparer') { filtresComparer(box); return; }
+  for (const c of D.createurs) {
+    const b = el('button', 'filtre');
+    b.type = 'button'; b.id = 'filtre-' + c.k;
+    b.style.setProperty('--c', couleur(c.k));
+    b.setAttribute('aria-pressed', String(actifs.has(c.k)));
+    b.append(el('span', 'pastille'), el('span', null, c.k === 'mj' ? 'Toi' : c.nom));
+    b.addEventListener('click', () => { actifs.has(c.k) ? actifs.delete(c.k) : actifs.add(c.k); memo.ecrire('masques', D.createurs.map((x) => x.k).filter((k) => !actifs.has(k))); tout(); });
+    box.appendChild(b);
+  }
+  if (actifs.size < D.createurs.length) {
+    const t = el('button', 'filtre tout', 'Tout afficher');
+    t.type = 'button'; t.id = 'filtre-tout';
+    t.addEventListener('click', () => { D.createurs.forEach((c) => actifs.add(c.k)); memo.ecrire('masques', []); tout(); });
+    box.appendChild(t);
+  }
+}
+
+function carte(v) {
+  const c = parC[v.k];
+  const a = el(v.prevu ? 'div' : 'a', 'carte' + (v.prevu ? ' prevue' : ''));
+  a.style.setProperty('--c', couleur(v.k));
+  if (!v.prevu) { a.href = v.u; a.target = '_blank'; a.rel = 'noopener'; }
+  const haut = el('div', 'haut');
+  haut.append(el('span', 'qui', c.k === 'mj' ? 'Toi' : c.nom), el('span', 'h', (v.prevu ? 'vers ' : '') + fHeure(v.h)));
+  a.append(el('div', 'barre'), haut);
+  if (v.prevu) a.append(el('div', 't', 'Sortie probable, d\'après ses habitudes'));
+  else {
+    a.append(el('div', 't', v.t));
+    a.append(el('div', 'meta', [fDuree(v.s), v.v != null ? compact.format(v.v) + ' vues' : ''].filter(Boolean).join(' · ')));
+  }
+  return a;
+}
+
+function bandeSemaine(lundi, prev) {
+  const s = el('div', 'semaine-strip');
+  for (let i = 0; i < 7; i++) {
+    const d = plusJours(lundi, i);
+    const cell = el('div', 'sj' + (i >= 5 ? ' we' : '') + (d === aujourdhui ? ' auj' : ''));
+    cell.append(el('span', 'l', JOURS[i]), el('span', 'n', String(dUTC(d).getUTCDate())));
+    const pts = el('div', 'points');
+    visibles().filter((v) => v.d === d).forEach((v) => { const p = el('span', 'pt'); p.style.setProperty('--c', couleur(v.k)); p.title = parC[v.k].nom; pts.appendChild(p); });
+    prev.filter((v) => v.d === d).forEach((v) => { const p = el('span', 'pt prevu'); p.style.setProperty('--c', couleur(v.k)); p.title = parC[v.k].nom + ' (probable)'; pts.appendChild(p); });
+    cell.appendChild(pts);
+    s.appendChild(cell);
+  }
+  return s;
+}
+
+/* vue Agenda */
+function dessinerAgenda() {
+  const box = document.getElementById('agenda');
+  box.replaceChildren();
+  const prev = previsions();
+  const lundi = plusJours(aujourdhui, -jSem(aujourdhui));
+  const b1 = el('div', 'bloc');
+  b1.append(el('h2', null, 'Cette semaine'), bandeSemaine(lundi, prev), el('p', 'note', 'Point plein : vidéo sortie. Cercle : sortie probable d\'après ses habitudes.'));
+  box.appendChild(b1);
+  if (prev.length) {
+    const b2 = el('div', 'bloc');
+    b2.appendChild(el('h2', null, 'À venir'));
+    const l = el('div', 'liste');
+    let jour = null;
+    for (const v of prev) {
+      if (v.d !== jour) { jour = v.d; l.appendChild(el('p', 'jour-titre' + (v.d === aujourdhui ? ' auj' : ''), (v.d === aujourdhui ? 'Aujourd\'hui · ' : '') + fJour(v.d))); }
+      l.appendChild(carte(v));
+    }
+    b2.appendChild(l);
+    box.appendChild(b2);
+  }
+  const b3 = el('div', 'bloc');
+  b3.appendChild(el('h2', null, 'Dernières sorties'));
+  const l = el('div', 'liste');
+  const vs = visibles().slice().sort((a, b) => (a.d + a.h < b.d + b.h ? 1 : -1));
+  if (!vs.length) l.appendChild(el('p', 'note', 'Aucun créateur sélectionné.'));
+  let jour = null;
+  const hier = plusJours(aujourdhui, -1);
+  for (const v of vs) {
+    if (v.d !== jour) {
+      jour = v.d;
+      const pre = v.d === aujourdhui ? 'Aujourd\'hui · ' : v.d === hier ? 'Hier · ' : '';
+      l.appendChild(el('p', 'jour-titre' + (v.d === aujourdhui ? ' auj' : ''), pre + fJour(v.d)));
+    }
+    l.appendChild(carte(v));
+  }
+  b3.appendChild(l);
+  box.appendChild(b3);
+}
+
+/* vue Mois */
+function dessinerMois() {
+  const box = document.getElementById('mois');
+  box.replaceChildren();
+  const premierMois = D.debut.slice(0, 7), dernierMois = aujourdhui.slice(0, 7);
+  if (!moisVu) moisVu = dernierMois;
+  const [an, m] = moisVu.split('-').map(Number);
+  const nav = el('div', 'nav-mois');
+  const prec = el('button', 'fleche', '‹'); prec.type = 'button'; prec.id = 'mois-prec'; prec.setAttribute('aria-label', 'Mois précédent');
+  const suiv = el('button', 'fleche', '›'); suiv.type = 'button'; suiv.id = 'mois-suiv'; suiv.setAttribute('aria-label', 'Mois suivant');
+  prec.disabled = moisVu <= premierMois; suiv.disabled = moisVu >= dernierMois;
+  const decaler = (n) => { const d = new Date(Date.UTC(an, m - 1 + n, 1)); moisVu = iso(d).slice(0, 7); jourChoisi = moisVu === aujourdhui.slice(0, 7) ? aujourdhui : null; dessinerMois(); };
+  prec.addEventListener('click', () => decaler(-1)); suiv.addEventListener('click', () => decaler(1));
+  const vs = visibles();
+  const nMois = vs.filter((v) => v.d.startsWith(moisVu)).length;
+  const h = el('h2', null, MOIS[m - 1] + ' ' + an);
+  nav.append(prec, h, suiv);
+  box.appendChild(nav);
+  box.appendChild(el('p', 'note', nMois + (nMois > 1 ? ' sorties ce mois-ci. ' : ' sortie ce mois-ci. ') + 'Touchez un jour pour voir ses vidéos.'));
+  const g = el('div', 'grille');
+  JOURS.forEach((j) => g.appendChild(el('div', 'ej', j)));
+  const premier = new Date(Date.UTC(an, m - 1, 1));
+  const nb = new Date(Date.UTC(an, m, 0)).getUTCDate();
+  for (let i = 0; i < (premier.getUTCDay() + 6) % 7; i++) g.appendChild(el('div', 'case vide'));
+  for (let j = 1; j <= nb; j++) {
+    const d = moisVu + '-' + String(j).padStart(2, '0');
+    const c = el('button', 'case' + (jSem(d) >= 5 ? ' we' : '') + (d > aujourdhui ? ' futur' : '') + (d === aujourdhui ? ' auj' : ''));
+    c.type = 'button';
+    c.setAttribute('aria-pressed', String(d === jourChoisi));
+    const lj = vs.filter((v) => v.d === d);
+    c.setAttribute('aria-label', fJour(d) + ', ' + lj.length + (lj.length > 1 ? ' sorties' : ' sortie'));
+    c.appendChild(el('span', 'num', String(j)));
+    const pts = el('span', 'points');
+    lj.slice(0, 4).forEach((v) => { const p = el('span', 'pt'); p.style.setProperty('--c', couleur(v.k)); pts.appendChild(p); });
+    if (lj.length > 4) pts.appendChild(el('span', 'plus', '+' + (lj.length - 4)));
+    c.appendChild(pts);
+    c.addEventListener('click', () => { jourChoisi = d; dessinerMois(); });
+    g.appendChild(c);
+  }
+  box.appendChild(g);
+  if (jourChoisi) {
+    const b = el('div', 'bloc');
+    b.appendChild(el('h2', null, (jourChoisi === aujourdhui ? 'Aujourd\'hui · ' : '') + fJour(jourChoisi)));
+    const l = el('div', 'liste');
+    const lj = vs.filter((v) => v.d === jourChoisi).sort((a, x) => (a.h < x.h ? -1 : 1));
+    if (!lj.length) l.appendChild(el('p', 'note', 'Aucune vidéo longue ce jour-là.'));
+    lj.forEach((v) => l.appendChild(carte(v)));
+    b.appendChild(l);
+    box.appendChild(b);
+  }
+}
+
+/* vue Habitudes */
+function dessinerHabitudes() {
+  const box = document.getElementById('habitudes');
+  box.replaceChildren();
+  const b = el('div', 'bloc');
+  b.append(el('h2', null, 'Qui sort quand'), el('p', 'note', 'Vidéos longues depuis le ' + dUTC(D.debut).getUTCDate() + ' ' + MOIS[dUTC(D.debut).getUTCMonth()] + ', par jour de la semaine. Heure de Paris.'));
+  box.appendChild(b);
+  const l = el('div', 'liste');
+  for (const c of D.createurs) {
+    if (!actifs.has(c.k)) continue;
+    const h = habitude(c.k);
+    const carteH = el('div', 'hab');
+    carteH.style.setProperty('--c', couleur(c.k));
+    const haut = el('div', 'haut');
+    haut.append(el('span', 'qui', c.nom), el('span', 'abo', c.abo + ' abonnés'));
+    carteH.appendChild(haut);
+    let phrase;
+    if (!h.l.length) phrase = 'Aucune vidéo longue depuis le 1er août.';
+    else if (h.jours.length) phrase = 'Souvent le ' + h.jours.map((j) => JOURS_L[j]).join(' et le ') + ', vers ' + fHeure(h.heure) + '.';
+    else phrase = 'Pas de jour fixe' + (h.heure ? ', souvent vers ' + fHeure(h.heure) : '') + '.';
+    carteH.appendChild(el('div', 'phrase', phrase));
+    const bande = el('div', 'bande');
+    const max = Math.max(1, ...h.parJ);
+    h.parJ.forEach((n, i) => {
+      const cell = el('div');
+      const barre = el('span', 'b' + (n ? ' on' : ''), n ? String(n) : '');
+      if (n) barre.style.setProperty('--force', Math.round(20 + (n / max) * 55) + '%');
+      cell.append(el('span', 'l', JOURS[i].slice(0, 1)), barre);
+      bande.appendChild(cell);
+    });
+    carteH.appendChild(bande);
+    carteH.appendChild(el('div', 'meta', h.l.length + (h.l.length > 1 ? ' vidéos' : ' vidéo') + (h.derniere ? ' · dernière : ' + fJour(h.derniere) : '')));
+    l.appendChild(carteH);
+  }
+  box.appendChild(l);
+}
+
+/* ===== Comparer ===== */
+const coulS = (k) => `var(--c-${k})`;
+const fVar = (x) => (x >= 0 ? '+' : '−') + Math.abs(Math.round(x * 100)) + ' %';
+const fSigne = (x) => (x >= 0 ? '+' : '−') + compact.format(Math.abs(x));
+const pasArrondi = (a) => (a >= 1000 ? 10 ** (Math.floor(Math.log10(a)) - 2) : 1);
+const nomS = (k) => (k === 'mj' ? 'Toi' : parS[k].nom);
+
+function filtresComparer(box) {
+  if (!S) return;
+  for (const c of S.chaines) {
+    const b = el('button', 'filtre');
+    b.type = 'button'; b.id = 'comp-' + c.k;
+    b.style.setProperty('--c', coulS(c.k));
+    b.setAttribute('aria-pressed', String(choisis.has(c.k)));
+    b.append(el('span', 'pastille'), el('span', null, nomS(c.k)));
+    b.addEventListener('click', () => { choisis.has(c.k) ? choisis.delete(c.k) : choisis.add(c.k); memo.ecrire('choisis', [...choisis]); dessinerFiltres(); dessinerComparer(); });
+    box.appendChild(b);
+  }
+}
+
+/* relevés d'une chaîne ; un relevé dont le total n'a pas bougé (compteur public figé) est ignoré */
+function points(k) {
+  const out = [];
+  for (const [d, v, a, n, t] of S.series[k] || []) {
+    if (v == null) continue;
+    if (out.length && v === out[out.length - 1].v) continue;
+    out.push({ d, v, a, n, t: Date.parse(t || d + 'T00:00:00Z') });
+  }
+  return out;
+}
+/* vues gagnées par jour, ramenées à 24 h entre deux relevés */
+function rythmes(k) {
+  const p = points(k), out = [];
+  for (let i = 1; i < p.length; i++) {
+    const dt = (p[i].t - p[i - 1].t) / 864e5;
+    if (dt < 0.25) continue;
+    out.push({ d: p[i].d, r: (p[i].v - p[i - 1].v) / dt });
+  }
+  return out;
+}
+function bilan(k, N) {
+  const p = points(k);
+  const depuis = (S.series[k] || [])[0] ? S.series[k][0][0] : null;
+  if (p.length < 2) return { manque: true, depuis };
+  const fin = p[p.length - 1];
+  const avantOu = (t) => { let b = null; for (const q of p) { if (q.t <= t + 6 * 36e5) b = q; } return b; };
+  const deb = avantOu(fin.t - N * 864e5);
+  if (!deb || deb === fin || (fin.t - deb.t) / 864e5 < N * 0.7) return { manque: true, depuis };
+  const total = ((fin.v - deb.v) / ((fin.t - deb.t) / 864e5)) * N;
+  const pre = avantOu(deb.t - N * 864e5);
+  let totalAvant = null;
+  if (pre && pre !== deb) { const j2 = (deb.t - pre.t) / 864e5; if (j2 >= N * 0.7) totalAvant = ((deb.v - pre.v) / j2) * N; }
+  const tous = (S.series[k] || []).map(([d, v, a, n, t]) => ({ d, a, n, t: Date.parse(t || d + 'T00:00:00Z') }));
+  const dernier = (champ) => [...tous].reverse().find((q) => q[champ] != null);
+  const proche = (t, champ) => { let b = null; for (const q of tous) { if (q[champ] != null && q.t <= t + 6 * 36e5) b = q; } return b; };
+  const aF = dernier('a'), aD = proche(fin.t - N * 864e5, 'a'), nF = dernier('n'), nD = proche(fin.t - N * 864e5, 'n');
+  return {
+    total, totalAvant, variation: totalAvant ? total / totalAvant - 1 : null, parJour: total / N,
+    abos: aF && aD && aF !== aD ? aF.a - aD.a : null, aFin: aF ? aF.a : null,
+    videos: nF && nD && nF !== nD ? nF.n - nD.n : null, fin: fin.d,
+  };
+}
+
+function pasJoli(brut) { const p = 10 ** Math.floor(Math.log10(brut)); const f = brut / p; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p; }
+
+/* courbes : series [{k, pts: [{d, y}]}] */
+function graphe(box, series, o) {
+  box.replaceChildren();
+  const W = Math.max(260, box.clientWidth - 12), H = o.hauteur || 220;
+  const dates = [...new Set(series.flatMap((s) => s.pts.filter((p) => p.y != null).map((p) => p.d)))].sort();
+  if (dates.length < 2) { box.appendChild(el('p', 'note', 'Pas encore assez de relevés pour tracer une courbe.')); return; }
+  const vals = series.flatMap((s) => s.pts.map((p) => p.y)).filter((v) => v != null && (!o.log || v > 0));
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (o.ref100) { lo = Math.min(lo, 100); hi = Math.max(hi, 100); }
+  const tr = o.log ? (v) => Math.log10(Math.max(v, 1)) : (v) => v;
+  let a = tr(lo), b = tr(hi);
+  if (a === b) { a -= o.log ? 0.5 : 1; b += o.log ? 0.5 : 1; }
+  if (o.log) { a = Math.floor(a * 2) / 2; b = Math.ceil(b * 2) / 2; } else { const m = (b - a) * 0.08; a = Math.max(0, a - m); b += m; }
+  const ticks = [];
+  if (o.log) { for (let e = Math.floor(a); e <= Math.ceil(b); e++) [1, 3].forEach((f) => { const v = f * 10 ** e; if (tr(v) >= a - 1e-9 && tr(v) <= b + 1e-9) ticks.push(v); }); }
+  else { const st = pasJoli((b - a) / 4); for (let v = Math.ceil(a / st) * st; v <= b + 1e-9; v += st) ticks.push(v); }
+  const gauche = Math.max(...ticks.map((t) => o.fmt(t).length), 2) * 6.2 + 8;
+  const fins = series.map((s) => { const p = [...s.pts].reverse().find((q) => q.y != null && (!o.log || q.y > 0)); return p ? { s, p, txt: nomS(s.k) + ' ' + o.fmt(p.y) } : null; }).filter(Boolean);
+  const droite = Math.min(132, Math.max(...fins.map((f) => f.txt.length), 4) * 6.3 + 12);
+  const lx = W - gauche - droite;
+  const t0 = dUTC(dates[0]).getTime(), t1 = dUTC(dates[dates.length - 1]).getTime();
+  const x = (d) => gauche + ((dUTC(d).getTime() - t0) / (t1 - t0)) * lx;
+  const y = (v) => 10 + (1 - (tr(v) - a) / (b - a)) * (H - 34);
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('role', 'img'); svg.setAttribute('aria-label', o.label);
+  const add = (tag, at, txt) => { const n = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(at)) n.setAttribute(k, v); if (txt != null) n.textContent = txt; svg.appendChild(n); return n; };
+  ticks.forEach((t) => { add('line', { x1: gauche, x2: gauche + lx, y1: y(t), y2: y(t), stroke: 'var(--line)' }); add('text', { x: gauche - 6, y: y(t) + 3, 'text-anchor': 'end' }, o.fmt(t)); });
+  if (o.ref100) add('line', { x1: gauche, x2: gauche + lx, y1: y(100), y2: y(100), stroke: 'var(--muted)', 'stroke-dasharray': '4 4' });
+  const etiq = [];
+  for (const d of dates) {
+    const px = x(d);
+    if (!etiq.length || px - x(etiq[etiq.length - 1]) >= 58) etiq.push(d);
+  }
+  const der = dates[dates.length - 1];
+  if (etiq[etiq.length - 1] !== der) { if (x(der) - x(etiq[etiq.length - 1]) < 58 && etiq.length > 1) etiq.pop(); etiq.push(der); }
+  etiq.forEach((d, i) => { const dd = dUTC(d); add('text', { x: x(d), y: H - 8, 'text-anchor': i === 0 ? 'start' : d === der ? 'end' : 'middle' }, dd.getUTCDate() + ' ' + MOIS_C[dd.getUTCMonth()]); });
+  for (const s of series) {
+    const pts = s.pts.filter((p) => p.y != null && (!o.log || p.y > 0));
+    if (!pts.length) continue;
+    const chemin = pts.map((p, i) => (i ? 'L' : 'M') + x(p.d).toFixed(1) + ' ' + y(p.y).toFixed(1)).join(' ');
+    if (o.aire && pts.length > 1) add('path', { d: chemin + ` L${x(pts[pts.length - 1].d).toFixed(1)} ${H - 24} L${x(pts[0].d).toFixed(1)} ${H - 24} Z`, fill: `color-mix(in srgb, ${coulS(s.k)} 14%, transparent)` });
+    add('path', { d: chemin, fill: 'none', stroke: coulS(s.k), 'stroke-width': s.k === 'mj' ? 3 : 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' });
+  }
+  fins.forEach((f) => { f.yy = y(f.p.y); });
+  fins.sort((m, n) => m.yy - n.yy);
+  for (let i = 1; i < fins.length; i++) if (fins[i].yy - fins[i - 1].yy < 13) fins[i].yy = fins[i - 1].yy + 13;
+  fins.forEach((f) => { add('circle', { cx: x(f.p.d), cy: y(f.p.y), r: 3, fill: coulS(f.s.k) }); const t = add('text', { x: gauche + lx + 6, y: f.yy + 4, class: 'fin' }, f.txt); t.style.fill = coulS(f.s.k); });
+  const regle = add('line', { y1: 10, y2: H - 24, stroke: 'var(--muted)', visibility: 'hidden' });
+  const zone = add('rect', { x: gauche, y: 0, width: Math.max(0, lx), height: H, fill: 'transparent' });
+  box.appendChild(svg);
+  const bulleG = el('div', 'bulle-g');
+  bulleG.hidden = true;
+  box.appendChild(bulleG);
+  const pointer = (ev) => {
+    const r = svg.getBoundingClientRect();
+    const sx = (ev.clientX - r.left) * (W / r.width);
+    const d = dates.reduce((m, q) => (Math.abs(x(q) - sx) < Math.abs(x(m) - sx) ? q : m), dates[0]);
+    regle.setAttribute('x1', x(d)); regle.setAttribute('x2', x(d)); regle.setAttribute('visibility', 'visible');
+    bulleG.replaceChildren(el('div', 't', fJour(d)));
+    series.map((s) => ({ s, p: s.pts.find((q) => q.d === d) })).filter((z) => z.p && z.p.y != null).sort((m, n) => n.p.y - m.p.y).forEach(({ s, p }) => {
+      const rw = el('div', 'r'); const g = el('span'); const sw = el('span', 'sw');
+      sw.style.setProperty('--c', coulS(s.k));
+      g.append(sw, el('span', null, nomS(s.k)));
+      rw.append(g, el('span', null, o.fmt(p.y)));
+      bulleG.appendChild(rw);
+    });
+    bulleG.hidden = false;
+    const px = x(d) * (r.width / W), bw = bulleG.offsetWidth;
+    bulleG.style.left = Math.max(4, px + 12 + bw > box.clientWidth ? px - bw - 12 : px + 12) + 'px';
+  };
+  zone.addEventListener('pointermove', pointer);
+  zone.addEventListener('pointerdown', pointer);
+  zone.addEventListener('pointerleave', () => { bulleG.hidden = true; regle.setAttribute('visibility', 'hidden'); });
+}
+
+function detailChaine(k) {
+  const d = el('div', 'detail');
+  const g = el('div', 'graphe');
+  d.append(el('p', 'note', 'Vues gagnées chaque jour depuis le ' + fJour(parS[k].depuis || D.debut) + '.'), g);
+  const tous = (S.series[k] || []).map(([dd, v, a, n]) => ({ d: dd, v, a, n }));
+  const t = el('table', 'tab-mois');
+  const thead = el('thead'), th = el('tr');
+  ['Mois', 'Vues', 'Abonnés ≈', 'Vidéos'].forEach((x) => th.appendChild(el('th', null, x)));
+  thead.appendChild(th); t.appendChild(thead);
+  const tb = el('tbody');
+  for (const m of [...new Set(tous.map((q) => q.d.slice(0, 7)))]) {
+    const dansM = tous.filter((q) => q.d.startsWith(m));
+    const avant = tous.filter((q) => q.d < m + '-01').pop() || dansM[0];
+    const der = dansM[dansM.length - 1];
+    const diff = (c) => (der[c] != null && avant[c] != null && der !== avant ? der[c] - avant[c] : null);
+    const dv = diff('v'), da = diff('a'), dn = diff('n');
+    const ligne = el('tr');
+    ligne.append(el('td', null, MOIS[Number(m.slice(5)) - 1] + (m === aujourdhui.slice(0, 7) ? ' (en cours)' : '')),
+      el('td', null, dv == null ? '—' : compact.format(dv)), el('td', null, da == null ? '—' : fSigne(da)), el('td', null, dn == null ? '—' : String(dn)));
+    tb.appendChild(ligne);
+  }
+  t.appendChild(tb);
+  d.appendChild(t);
+  requestAnimationFrame(() => graphe(g, [{ k, pts: rythmes(k).map((r) => ({ d: r.d, y: r.r })) }], { log: false, fmt: (v) => compact.format(v), label: 'Vues gagnées par jour depuis août', aire: true, hauteur: 180 }));
+  return d;
+}
+
+function carteRang(k, b) {
+  const card = el('div', 'rang');
+  card.style.setProperty('--c', coulS(k));
+  const haut = el('div', 'haut');
+  haut.appendChild(el('span', 'qui', nomS(k)));
+  if (b.manque) {
+    haut.appendChild(el('span', 'variation', 'en cours'));
+    const txt = b.depuis ? 'Suivie depuis le ' + fJour(b.depuis) + ' : comparaison sur ' + periode + ' jours possible à partir du ' + fJour(plusJours(b.depuis, periode)) + '.' : 'Pas encore de relevé.';
+    card.append(haut, el('p', 'note', txt));
+    return card;
+  }
+  haut.appendChild(el('span', 'variation' + (b.variation == null ? '' : b.variation >= 0 ? ' up' : ' down'), b.variation == null ? '—' : fVar(b.variation)));
+  card.appendChild(haut);
+  const ch = el('div', 'chiffres');
+  const bloc = (val, lab) => { const x = el('div'); x.append(el('span', 'val', val), el('span', 'lab', lab)); return x; };
+  ch.append(bloc(compact.format(b.total), 'vues en ' + periode + ' j'), bloc(compact.format(b.parJour), 'par jour'),
+    bloc(b.abos == null ? '—' : b.abos === 0 && b.aFin ? '< ' + compact.format(pasArrondi(b.aFin)) : fSigne(b.abos), 'abonnés ≈'),
+    bloc(b.videos == null ? '—' : String(b.videos), 'vidéos'));
+  card.appendChild(ch);
+  const bt = el('button', 'lien-detail', detailOuvert === k ? 'Masquer le détail' : 'Détail depuis août');
+  bt.type = 'button'; bt.id = 'detail-' + k;
+  bt.addEventListener('click', () => { detailOuvert = detailOuvert === k ? null : k; dessinerComparer(); const n = document.getElementById('detail-' + k); if (n) n.scrollIntoView({ block: 'nearest' }); });
+  card.appendChild(bt);
+  if (detailOuvert === k) card.appendChild(detailChaine(k));
+  return card;
+}
+
+function dessinerComparer() {
+  const box = document.getElementById('comparer');
+  if (box.hidden) return;
+  box.replaceChildren();
+  if (!S) { box.appendChild(el('div', 'etat', 'La comparaison n\'est pas disponible pour le moment. Réessaie plus tard.')); return; }
+  const ks = S.chaines.map((c) => c.k).filter((k) => choisis.has(k));
+  const reg = el('div', 'reglages');
+  const seg = (opts, val, choix, nom) => {
+    const g = el('div', 'seg');
+    g.setAttribute('role', 'group'); g.setAttribute('aria-label', nom);
+    opts.forEach(([v, t]) => { const b = el('button', null, t); b.type = 'button'; b.id = 'seg-' + nom + '-' + v; b.setAttribute('aria-pressed', String(v === val)); b.addEventListener('click', () => { choix(v); dessinerComparer(); }); g.appendChild(b); });
+    return g;
+  };
+  reg.append(seg([[7, '7 jours'], [28, '28 jours']], periode, (v) => { periode = v; memo.ecrire('periode', v); }, 'periode'),
+    seg([['vues', 'Vues / jour'], ['evol', 'Évolution']], modeC, (v) => { modeC = v; memo.ecrire('modeC', v); }, 'affichage'));
+  box.appendChild(reg);
+  if (!ks.length) { box.appendChild(el('p', 'note', 'Choisis au moins une chaîne en haut de l\'écran.')); return; }
+  const b1 = el('div', 'bloc');
+  b1.appendChild(el('h2', null, modeC === 'vues' ? 'Vues gagnées par jour' : 'Par rapport aux ' + periode + ' jours d\'avant'));
+  b1.appendChild(el('p', 'note', modeC === 'vues' ? 'Les ' + periode + ' derniers jours. Échelle en puissances de 10, pour lire petites et grosses chaînes ensemble. Le compteur public de YouTube a parfois un jour de retard : le dernier point peut être un peu bas.' : '100 = moyenne de chaque chaîne sur les ' + periode + ' jours précédents. Au-dessus de 100, elle fait mieux qu\'avant.'));
+  const g = el('div', 'graphe');
+  g.id = 'graphe-comparer';
+  b1.appendChild(g);
+  box.appendChild(b1);
+  const fin = ks.map((k) => { const r = rythmes(k); return r.length ? r[r.length - 1].d : null; }).filter(Boolean).sort().pop();
+  const series = [];
+  if (fin) {
+    const lim = plusJours(fin, -periode), limAvant = plusJours(fin, -2 * periode);
+    for (const k of ks) {
+      const r = rythmes(k);
+      let pts = r.filter((p) => p.d > lim && p.d <= fin).map((p) => ({ d: p.d, y: p.r }));
+      if (modeC === 'evol') {
+        const av = r.filter((p) => p.d > limAvant && p.d <= lim);
+        const base = av.length >= periode * 0.6 ? av.reduce((s2, p) => s2 + p.r, 0) / av.length : 0;
+        pts = base > 0 ? pts.map((p) => ({ d: p.d, y: (p.y / base) * 100 })) : [];
+      }
+      series.push({ k, pts });
+    }
+  }
+  graphe(g, series, { log: modeC === 'vues', ref100: modeC === 'evol', fmt: modeC === 'vues' ? (v) => compact.format(v) : (v) => String(Math.round(v)), label: 'Comparaison des vues gagnées par jour' });
+  const b2 = el('div', 'bloc');
+  b2.appendChild(el('h2', null, 'Sur les ' + periode + ' derniers jours'));
+  b2.appendChild(el('p', 'note', 'Variation : par rapport aux ' + periode + ' jours d\'avant. Abonnés arrondis par YouTube. Vidéos : Shorts compris.'));
+  const l = el('div', 'liste');
+  ks.map((k) => ({ k, b: bilan(k, periode) }))
+    .sort((m, n) => (n.b.variation ?? -9) - (m.b.variation ?? -9))
+    .forEach(({ k, b }) => l.appendChild(carteRang(k, b)));
+  b2.appendChild(l);
+  box.appendChild(b2);
+}
+
+/* onglets */
+function montrer(v, lier) {
+  vue = v;
+  VUES.forEach((x) => {
+    document.getElementById(x).hidden = x !== v;
+    document.getElementById('onglet-' + x).setAttribute('aria-selected', String(x === v));
+  });
+  memo.ecrire('vue', v);
+  if (D) dessinerFiltres();
+  if (v === 'comparer') dessinerComparer();
+  if (lier) try { history.replaceState(null, '', '#' + v); } catch (e) { /* lien non modifiable */ }
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('.onglet').forEach((b) => b.addEventListener('click', () => montrer(b.dataset.vue, true)));
+
+function tout() {
+  dessinerFiltres();
+  dessinerAgenda();
+  dessinerMois();
+  dessinerHabitudes();
+  dessinerComparer();
+}
+
+function erreur(msg) {
+  const box = document.getElementById('agenda');
+  box.replaceChildren();
+  const e = el('div', 'etat');
+  const r = el('button', 'bouton', 'Réessayer');
+  r.type = 'button'; r.id = 'reessayer';
+  r.addEventListener('click', charger);
+  e.append(el('p', null, msg), r);
+  box.appendChild(e);
+  document.getElementById('maj').textContent = '';
+}
+
+async function charger() {
+  const box = document.getElementById('agenda');
+  box.replaceChildren(el('div', 'etat', 'Chargement des sorties…'));
+  try {
+    const [r, rs] = await Promise.all([fetch('donnees.json', { cache: 'no-store' }), fetch('stats.json', { cache: 'no-store' }).catch(() => null)]);
+    if (!r.ok) throw new Error(r.status);
+    D = await r.json();
+    S = rs && rs.ok ? await rs.json().catch(() => null) : null;
+    if (S) parS = Object.fromEntries(S.chaines.map((c) => [c.k, c]));
+  } catch (e) {
+    erreur('Impossible de charger les sorties pour le moment. Vérifiez la connexion puis réessayez.');
+    return;
+  }
+  parC = Object.fromEntries(D.createurs.map((c) => [c.k, c]));
+  const masques = memo.lire('masques', []);
+  actifs = new Set(D.createurs.map((c) => c.k).filter((k) => !masques.includes(k)));
+  const m = new Date(D.maj);
+  document.getElementById('maj').textContent = 'mis à jour le ' + m.getDate() + ' ' + MOIS_C[m.getMonth()] + '\nà ' + new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit' }).format(m).replace(':', ' h ');
+  document.getElementById('maj').style.whiteSpace = 'pre-line';
+  tout();
+  const lien = location.hash.slice(1);
+  montrer(VUES.includes(lien) ? lien : memo.lire('vue', 'agenda'), false);
+}
+charger();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => { /* hors ligne indisponible */ }); });
+}
+</script>
+</body>
+</html>

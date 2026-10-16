@@ -1,0 +1,16 @@
+{
+  "name": "Sorties YouTube",
+  "short_name": "Sorties YT",
+  "description": "Calendrier des sorties et comparatif des vues de Mister Jo et des chaînes qu'il suit.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f6f8",
+  "theme_color": "#15171c",
+  "icons": [
+    {"src": "icone-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icone-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
