@@ -502,18 +502,22 @@ function bilan(k, N) {
   if (p.length < 2) return { manque: true, depuis };
   const fin = p[p.length - 1];
   const avantOu = (t) => { let b = null; for (const q of p) { if (q.t <= t + 6 * 36e5) b = q; } return b; };
-  const deb = avantOu(fin.t - N * 864e5);
-  if (!deb || deb === fin || (fin.t - deb.t) / 864e5 < N * 0.7) return { manque: true, depuis };
-  const total = ((fin.v - deb.v) / ((fin.t - deb.t) / 864e5)) * N;
+  const deb = avantOu(fin.t - N * 864e5) || p[0];
+  const jours = (fin.t - deb.t) / 864e5;
+  if (deb === fin || jours < N * 0.7) return { manque: true, depuis };
+  /* historique plus court que la période (90 j depuis le 1er août) : vrai total sur les jours suivis, pas d'extrapolation */
+  const partiel = jours < N - 2;
+  const total = partiel ? fin.v - deb.v : ((fin.v - deb.v) / jours) * N;
   const pre = avantOu(deb.t - N * 864e5);
   let totalAvant = null;
   if (pre && pre !== deb) { const j2 = (deb.t - pre.t) / 864e5; if (j2 >= N * 0.7) totalAvant = ((deb.v - pre.v) / j2) * N; }
   const tous = (S.series[k] || []).map(([d, v, a, n, t]) => ({ d, a, n, t: Date.parse(t || d + 'T00:00:00Z') }));
   const dernier = (champ) => [...tous].reverse().find((q) => q[champ] != null);
   const proche = (t, champ) => { let b = null; for (const q of tous) { if (q[champ] != null && q.t <= t + 6 * 36e5) b = q; } return b; };
-  const aF = dernier('a'), aD = proche(fin.t - N * 864e5, 'a'), nF = dernier('n'), nD = proche(fin.t - N * 864e5, 'n');
+  const aF = dernier('a'), aD = proche(deb.t, 'a'), nF = dernier('n'), nD = proche(deb.t, 'n');
   return {
-    total, totalAvant, variation: totalAvant ? total / totalAvant - 1 : null, parJour: total / N,
+    total, totalAvant, variation: totalAvant ? total / totalAvant - 1 : null, parJour: partiel ? total / jours : total / N,
+    jours: partiel ? Math.round(jours) : N,
     abos: aF && aD && aF !== aD ? aF.a - aD.a : null, aFin: aF ? aF.a : null,
     videos: nF && nD && nF !== nD ? nF.n - nD.n : null, fin: fin.d,
   };
@@ -526,7 +530,7 @@ function graphe(box, series, o) {
   box.replaceChildren();
   const W = Math.max(260, box.clientWidth - 12), H = o.hauteur || 220;
   const dates = [...new Set(series.flatMap((s) => s.pts.filter((p) => p.y != null).map((p) => p.d)))].sort();
-  if (dates.length < 2) { box.appendChild(el('p', 'note', 'Pas encore assez de relevés pour tracer une courbe.')); return; }
+  if (dates.length < 2) { box.appendChild(el('p', 'note', o.vide || 'Pas encore assez de relevés pour tracer une courbe.')); return; }
   const vals = series.flatMap((s) => s.pts.map((p) => p.y)).filter((v) => v != null && (!o.log || v > 0));
   let lo = Math.min(...vals), hi = Math.max(...vals);
   if (o.ref100) { lo = Math.min(lo, 100); hi = Math.max(hi, 100); }
@@ -553,10 +557,10 @@ function graphe(box, series, o) {
   const etiq = [];
   for (const d of dates) {
     const px = x(d);
-    if (!etiq.length || px - x(etiq[etiq.length - 1]) >= 58) etiq.push(d);
+    if (!etiq.length || px - x(etiq[etiq.length - 1]) >= (etiq.length === 1 ? 78 : 58)) etiq.push(d);  /* la 1re date est calée à gauche : plus de place après elle */
   }
   const der = dates[dates.length - 1];
-  if (etiq[etiq.length - 1] !== der) { if (x(der) - x(etiq[etiq.length - 1]) < 58 && etiq.length > 1) etiq.pop(); etiq.push(der); }
+  if (etiq[etiq.length - 1] !== der) { if (x(der) - x(etiq[etiq.length - 1]) < 78 && etiq.length > 1) etiq.pop(); etiq.push(der); }
   etiq.forEach((d, i) => { const dd = dUTC(d); add('text', { x: x(d), y: H - 8, 'text-anchor': i === 0 ? 'start' : d === der ? 'end' : 'middle' }, dd.getUTCDate() + ' ' + MOIS_C[dd.getUTCMonth()]); });
   for (const s of series) {
     const pts = s.pts.filter((p) => p.y != null && (!o.log || p.y > 0));
@@ -639,7 +643,7 @@ function carteRang(k, b) {
   card.appendChild(haut);
   const ch = el('div', 'chiffres');
   const bloc = (val, lab) => { const x = el('div'); x.append(el('span', 'val', val), el('span', 'lab', lab)); return x; };
-  ch.append(bloc(compact.format(b.total), 'vues en ' + periode + ' j'), bloc(compact.format(b.parJour), 'par jour'),
+  ch.append(bloc(compact.format(b.total), 'vues en ' + b.jours + ' j'), bloc(compact.format(b.parJour), 'par jour'),
     bloc(b.abos == null ? '—' : b.abos === 0 && b.aFin ? '< ' + compact.format(pasArrondi(b.aFin)) : fSigne(b.abos), 'abonnés ≈'),
     bloc(b.videos == null ? '—' : String(b.videos), 'vidéos'));
   card.appendChild(ch);
@@ -664,13 +668,14 @@ function dessinerComparer() {
     opts.forEach(([v, t]) => { const b = el('button', null, t); b.type = 'button'; b.id = 'seg-' + nom + '-' + v; b.setAttribute('aria-pressed', String(v === val)); b.addEventListener('click', () => { choix(v); dessinerComparer(); }); g.appendChild(b); });
     return g;
   };
-  reg.append(seg([[7, '7 jours'], [28, '28 jours']], periode, (v) => { periode = v; memo.ecrire('periode', v); }, 'periode'),
+  reg.append(seg([[7, '7 j'], [28, '28 j'], [90, '90 j']], periode, (v) => { periode = v; memo.ecrire('periode', v); }, 'periode'),
     seg([['vues', 'Vues / jour'], ['evol', 'Évolution']], modeC, (v) => { modeC = v; memo.ecrire('modeC', v); }, 'affichage'));
   box.appendChild(reg);
   if (!ks.length) { box.appendChild(el('p', 'note', 'Choisis au moins une chaîne en haut de l\'écran.')); return; }
   const b1 = el('div', 'bloc');
   b1.appendChild(el('h2', null, modeC === 'vues' ? 'Vues gagnées par jour' : 'Par rapport aux ' + periode + ' jours d\'avant'));
-  b1.appendChild(el('p', 'note', modeC === 'vues' ? 'Les ' + periode + ' derniers jours. Échelle en puissances de 10, pour lire petites et grosses chaînes ensemble. Le compteur public de YouTube a parfois un jour de retard : le dernier point peut être un peu bas.' : '100 = moyenne de chaque chaîne sur les ' + periode + ' jours précédents. Au-dessus de 100, elle fait mieux qu\'avant.'));
+  const lisse = periode === 90;  /* 90 points par chaîne : moyenne sur 7 jours glissants, sinon les courbes s'emmêlent */
+  b1.appendChild(el('p', 'note', modeC === 'vues' ? 'Les ' + periode + ' derniers jours' + (lisse ? ', en moyenne sur 7 jours glissants pour lisser les courbes' : '') + '. Échelle en puissances de 10, pour lire petites et grosses chaînes ensemble. Le compteur public de YouTube a parfois un jour de retard : le dernier point peut être un peu bas.' : '100 = moyenne de chaque chaîne sur les ' + periode + ' jours précédents. Au-dessus de 100, elle fait mieux qu\'avant.'));
   const g = el('div', 'graphe');
   g.id = 'graphe-comparer';
   b1.appendChild(g);
@@ -681,7 +686,8 @@ function dessinerComparer() {
     const lim = plusJours(fin, -periode), limAvant = plusJours(fin, -2 * periode);
     for (const k of ks) {
       const r = rythmes(k);
-      let pts = r.filter((p) => p.d > lim && p.d <= fin).map((p) => ({ d: p.d, y: p.r }));
+      const moy7 = (d) => { const de = plusJours(d, -7), z = r.filter((q) => q.d > de && q.d <= d); return z.reduce((s2, q) => s2 + q.r, 0) / z.length; };
+      let pts = r.filter((p) => p.d > lim && p.d <= fin).map((p) => ({ d: p.d, y: lisse ? moy7(p.d) : p.r }));
       if (modeC === 'evol') {
         const av = r.filter((p) => p.d > limAvant && p.d <= lim);
         const base = av.length >= periode * 0.6 ? av.reduce((s2, p) => s2 + p.r, 0) / av.length : 0;
@@ -690,13 +696,18 @@ function dessinerComparer() {
       series.push({ k, pts });
     }
   }
-  graphe(g, series, { log: modeC === 'vues', ref100: modeC === 'evol', fmt: modeC === 'vues' ? (v) => compact.format(v) : (v) => String(Math.round(v)), label: 'Comparaison des vues gagnées par jour' });
+  const debutHisto = S.chaines.map((c) => c.depuis).filter(Boolean).sort()[0] || D.debut;
+  const sansAvant = 'L\'historique commence le ' + fJour(debutHisto) + ' : il n\'y a pas encore de « ' + periode + ' jours d\'avant » pour comparer.';
+  graphe(g, series, { log: modeC === 'vues', ref100: modeC === 'evol', fmt: modeC === 'vues' ? (v) => compact.format(v) : (v) => String(Math.round(v)), label: 'Comparaison des vues gagnées par jour',
+    vide: modeC === 'evol' && plusJours(fin || aujourdhui, -2 * periode) < debutHisto ? sansAvant + ' Choisis « Vues / jour » pour voir les courbes.' : null });
   const b2 = el('div', 'bloc');
   b2.appendChild(el('h2', null, 'Sur les ' + periode + ' derniers jours'));
-  b2.appendChild(el('p', 'note', 'Variation : par rapport aux ' + periode + ' jours d\'avant. Abonnés arrondis par YouTube. Vidéos : Shorts compris.'));
+  const bilans = ks.map((k) => ({ k, b: bilan(k, periode) }));
+  const avecVar = bilans.some(({ b }) => b.variation != null);
+  b2.appendChild(el('p', 'note', (avecVar ? 'Variation : par rapport aux ' + periode + ' jours d\'avant.' : sansAvant + ' Classement par vues par jour.') + ' Abonnés arrondis par YouTube. Vidéos : Shorts compris.'));
   const l = el('div', 'liste');
-  ks.map((k) => ({ k, b: bilan(k, periode) }))
-    .sort((m, n) => (n.b.variation ?? -9) - (m.b.variation ?? -9))
+  const cle = (b) => (avecVar ? b.variation ?? -9 : b.parJour ?? -1);
+  bilans.sort((m, n) => cle(n.b) - cle(m.b))
     .forEach(({ k, b }) => l.appendChild(carteRang(k, b)));
   b2.appendChild(l);
   box.appendChild(b2);
