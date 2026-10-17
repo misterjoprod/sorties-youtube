@@ -27,7 +27,8 @@
     --bg: #f5f6f8; --panel: #ffffff; --fg: #15171c; --muted: #5c6370; --line: #dde1e7; --weekend: #eceff4; --focus: #15171c; --barre: rgb(255 255 255 / .92);
     --c-sq: #c2378a; --c-mi: #3a5ccc; --c-am: #0f8f80; --c-in: #d65a0f; --c-mc: #7d45b5; --c-ma: #2b8f5c;
     --c-jo: #cf3b40; --c-se: #0a7fd6; --c-dj: #9a6a42; --c-mb: #a87800; --c-mj: #15171c;
-    --c-nb: #0891b2; --c-lp: #db2777; --c-bz: #4f46e5; --c-jz: #b7791f; --c-fz: #16a34a; --ok: #17803d; --bad: #c43d2f;
+    --c-nb: #0891b2; --c-lp: #db2777; --c-bz: #4f46e5; --c-jz: #b7791f; --c-fz: #16a34a;
+    --c-pl: #d1345b; --c-vk: #5f8f00; --c-tl: #2f6fa8; --c-cf: #b5179e; --c-tj: #c2560a; --c-fx: #5b6472; --ok: #17803d; --bad: #c43d2f;
     --f-display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
     --f-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
     --f-mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -37,14 +38,16 @@
       --bg: #111318; --panel: #181b21; --fg: #eceef2; --muted: #9aa1ad; --line: #2a2e37; --weekend: #1d2129; --focus: #eceef2; --barre: rgb(24 27 33 / .92);
       --c-sq: #f06db7; --c-mi: #7d9bff; --c-am: #3cc7b4; --c-in: #ff8c4a; --c-mc: #b48af0; --c-ma: #5dcc8f;
       --c-jo: #ff7378; --c-se: #4fb3ff; --c-dj: #d1a079; --c-mb: #e8b73a; --c-mj: #eceef2;
-      --c-nb: #22d3ee; --c-lp: #f472b6; --c-bz: #8b8ff8; --c-jz: #f2c14e; --c-fz: #4ade80; --ok: #4ade80; --bad: #ff7a6b; color-scheme: dark;
+      --c-nb: #22d3ee; --c-lp: #f472b6; --c-bz: #8b8ff8; --c-jz: #f2c14e; --c-fz: #4ade80;
+      --c-pl: #ff6f91; --c-vk: #a3d93f; --c-tl: #74b3f0; --c-cf: #f06ae0; --c-tj: #ff9a52; --c-fx: #b8c0cc; --ok: #4ade80; --bad: #ff7a6b; color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --bg: #111318; --panel: #181b21; --fg: #eceef2; --muted: #9aa1ad; --line: #2a2e37; --weekend: #1d2129; --focus: #eceef2; --barre: rgb(24 27 33 / .92);
     --c-sq: #f06db7; --c-mi: #7d9bff; --c-am: #3cc7b4; --c-in: #ff8c4a; --c-mc: #b48af0; --c-ma: #5dcc8f;
     --c-jo: #ff7378; --c-se: #4fb3ff; --c-dj: #d1a079; --c-mb: #e8b73a; --c-mj: #eceef2;
-      --c-nb: #22d3ee; --c-lp: #f472b6; --c-bz: #8b8ff8; --c-jz: #f2c14e; --c-fz: #4ade80; --ok: #4ade80; --bad: #ff7a6b; color-scheme: dark;
+      --c-nb: #22d3ee; --c-lp: #f472b6; --c-bz: #8b8ff8; --c-jz: #f2c14e; --c-fz: #4ade80;
+      --c-pl: #ff6f91; --c-vk: #a3d93f; --c-tl: #74b3f0; --c-cf: #f06ae0; --c-tj: #ff9a52; --c-fx: #b8c0cc; --ok: #4ade80; --bad: #ff7a6b; color-scheme: dark;
   }
   body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.4; -webkit-tap-highlight-color: transparent; }
   .appli { max-width: 720px; margin-inline: auto; min-height: 100%; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
@@ -242,7 +245,7 @@ const memo = {
 let D = null, parC = {}, actifs = new Set(), vue = 'agenda', moisVu = null, jourChoisi = aujourdhui;
 let S = null, parS = {}, periode = memo.lire('periode', 7), modeC = memo.lire('modeC', 'vues'), detailOuvert = null;
 let choisis = new Set(memo.lire('choisis', ['mj', 'nb', 'lp', 'bz', 'jz', 'fz']));
-let SH = null, parV = {}, voirToutS = false;
+let SH = null, parV = {}, voirToutS = false, voirToutN = false;
 const VUES = ['agenda', 'mois', 'habitudes', 'comparer', 'shorts'];
 const visibles = () => D.videos.filter((v) => actifs.has(v.k));
 
@@ -778,6 +781,36 @@ function carteShort(v, chiffres, pique) {
   return a;
 }
 
+/* chaînes du marché de sa niche : Shorts des 3 derniers jours et ceux qui repartent, classés par vitesse */
+function blocNiche() {
+  const niche = new Set(SH.niche);
+  const maintenant = Date.parse(SH.maj);
+  const ageJ = (v) => Math.max(0.04, (maintenant - (v.ts ? v.ts * 1000 : Date.parse(v.d + 'T' + (v.h || '12:00') + ':00+02:00'))) / 864e5);
+  const vitesse = (v) => (v.g != null ? v.g : (v.v || 0) / Math.max(ageJ(v), 0.25));
+  const cand = SH.videos.filter((v) => niche.has(v.k) && v.f === 's' && (v.g != null || ageJ(v) <= 3)).sort((a, b) => vitesse(b) - vitesse(a));
+  const b = el('div', 'bloc');
+  const noms = S.chaines.filter((c) => niche.has(c.k)).map((c) => nomS(c.k));
+  b.append(el('h2', null, 'Ce qui démarre dans ta niche'),
+    el('p', 'note', 'Shorts sortis ces 3 derniers jours, et ceux qui repartent, chez ' + noms.join(', ') + '. Classés par vitesse : vues par jour depuis la sortie, ou vues gagnées en 24 h dès qu\'il y a deux relevés.'));
+  if (!cand.length) { b.appendChild(el('p', 'note', 'Aucun Short récent pour le moment.')); return b; }
+  const l = el('div', 'liste');
+  (voirToutN ? cand : cand.slice(0, 8)).forEach((v) => {
+    const a = ageJ(v);
+    const txt = a < 2 ? compact.format(v.v || 0) + ' vues en ' + Math.max(1, Math.round(a * 24)) + ' h'
+      : v.g != null ? '+' + compact.format(v.g) + ' en 24 h · ' + compact.format(v.v || 0) + ' au total'
+      : compact.format(v.v || 0) + ' vues · ' + compact.format(vitesse(v)) + ' par jour';
+    l.appendChild(carteShort(v, txt, false));
+  });
+  b.appendChild(l);
+  if (cand.length > 8) {
+    const plus = el('button', 'bouton', voirToutN ? 'Voir moins' : 'Voir les ' + cand.length);
+    plus.type = 'button'; plus.id = 'niche-voir-tout';
+    plus.addEventListener('click', () => { voirToutN = !voirToutN; dessinerShorts(); });
+    b.appendChild(plus);
+  }
+  return b;
+}
+
 function dessinerShorts() {
   const box = document.getElementById('shorts');
   if (box.hidden) return;
@@ -794,6 +827,7 @@ function dessinerShorts() {
   });
   reg.appendChild(g);
   box.appendChild(reg);
+  if ((SH.niche || []).length) box.appendChild(blocNiche());
   const ks = new Set(S.chaines.map((c) => c.k).filter((k) => choisis.has(k)));
   if (!ks.size) { box.appendChild(el('p', 'note', 'Choisis au moins une chaîne en haut de l\'écran.')); return; }
   const vs = SH.videos.filter((v) => ks.has(v.k) && v.f === 's');
