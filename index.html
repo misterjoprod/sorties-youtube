@@ -244,7 +244,7 @@ const memo = {
 
 let D = null, parC = {}, actifs = new Set(), vue = 'agenda', moisVu = null, jourChoisi = aujourdhui;
 let S = null, parS = {}, periode = memo.lire('periode', 7), modeC = memo.lire('modeC', 'vues'), detailOuvert = null;
-let choisis = new Set(memo.lire('choisis', ['mj', 'nb', 'lp', 'bz', 'jz', 'fz']));
+let choisis = new Set(memo.lire('choisis', ['mj', 'nb', 'lp', 'bz', 'jz']));
 let SH = null, parV = {}, voirToutS = false, voirToutN = false;
 const VUES = ['agenda', 'mois', 'habitudes', 'comparer', 'shorts'];
 const visibles = () => D.videos.filter((v) => actifs.has(v.k));
